@@ -49,6 +49,7 @@ Transaction: {
 ## Setup
 
 1. Run localstack
+
 `docker run --rm -it -p 4566:4566 -p 4571:4571 localstack/localstack`
 
 2. Create stack
