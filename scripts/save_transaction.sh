@@ -1,5 +1,11 @@
 #!/bin/sh
 
+if [ $# -lt 3 ];
+then
+    echo "Sorry, please inform user, amount and transaction type"
+    exit
+fi
+
 message="{'user':'$1','amount':'$2','type':'$3'}"
 topic="arn:aws:sns:us-east-1:000000000000:SaveTransactionTopic"
 

@@ -2,7 +2,7 @@
 
 if [ $# -lt 1 ];
 then
-    echo "Sorry, please inform the lambda name"
+    echo "Sorry, please inform the lambda name (SaveTransactionLambda or GetTransactionsByUserLambda)"
     exit
 fi
 
@@ -18,10 +18,11 @@ then
     lambda_directory="lambda-save-transaction"
 
 else
-    echo "Sorry, please inform the lambda name"
+    echo "Sorry, please inform the lambda name (SaveTransactionLambda or GetTransactionsByUserLambda)"
     exit
 fi
 
 # update lambda function
 (cd ${lambda_directory} && rm -f -r -- __pycache__ && rm -f -- lambda.zip && zip -r lambda.zip ./*)
 aws lambda update-function-code --endpoint-url http://localhost:4566 --function-name ${lambda_name} --zip-file fileb://${lambda_directory}/lambda.zip
+(cd ${lambda_directory} && rm -f -- lambda.zip)
