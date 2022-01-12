@@ -48,7 +48,10 @@ Transaction: {
 
 ## Setup
 
-1. Create stack
+1. Run localstack
+`docker run --rm -it -p 4566:4566 -p 4571:4571 localstack/localstack`
+
+2. Create stack
 
 `aws cloudformation validate-template --endpoint-url http://localhost:4566 --template-body file://cloudformation/bank.yml`
 
@@ -56,14 +59,14 @@ Transaction: {
 
 `aws cloudformation list-stack-resources --endpoint-url http://localhost:4566 --stack-name bank`
 
-2. Update lambda save transactions
+3. Update lambda save transactions
 
 `(cd lambda-save-transaction && rm -f -r -- __pycache__ && rm -f -- lambda.zip && zip -r lambda.zip ./*)`
 
 `aws lambda update-function-code --endpoint-url http://localhost:4566 --function-name SaveTransactionLambda --zip-file fileb://lambda-save-transaction/lambda.zip`
 
 
-3. Update lambda get transactions by user
+4. Update lambda get transactions by user
 
 `(cd lambda-get-transactions-by-user && rm -f -r -- __pycache__ && rm -f -- lambda.zip && zip -r lambda.zip ./*)`
 
