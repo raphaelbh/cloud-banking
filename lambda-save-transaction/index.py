@@ -14,9 +14,9 @@ def lambda_handler(event, context):
 
   for record in event['Records']:
     body = json.loads(record['body'])
-    message = json.loads(body['Message'])
+    message = json.loads(body['Message'].replace("\'", "\""))
     logger.info('Body Message: ' + str(message))
-
+    
     saved_transaction = save_transaction({
       'user': message['user'],
       'amount': Decimal(message['amount']),

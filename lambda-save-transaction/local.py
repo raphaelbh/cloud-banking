@@ -7,9 +7,11 @@ os.environ["LOCALSTACK_HOSTNAME"] = 'localhost'
 
 ###  EVENT  ###
 body = {
-    'user': 'john',
-    'amount': '999.99',
-    'type': 'TRANSFER_SENT' # { TRANSFER_SENT, TRANSFER_RECEIVED, PURCHASE, PAYMENT, CANCELLED }
+    "Message": json.dumps({
+        "user": "john",
+        "amount": "999.99",
+        "type": "TRANSFER_SENT" # { TRANSFER_SENT, TRANSFER_RECEIVED, PURCHASE, PAYMENT, CANCELLED }
+    })
 }
 
 event = {
