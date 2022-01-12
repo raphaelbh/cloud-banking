@@ -1,0 +1,199 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Resources:
+
+  ######################################################################################################################
+  ########################################        DATASOURCE TRANSACTIONS       ######################################## 
+  ######################################################################################################################
+
+  TransactionsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: Transactions
+      AttributeDefinitions: 
+        - AttributeName: user
+          AttributeType: S
+        - AttributeName: transaction_id
+          AttributeType: S
+      KeySchema: 
+        - AttributeName: user
+          KeyType: HASH
+        - AttributeName: transaction_id
+          KeyType: RANGE
+
+  ######################################################################################################################
+  ######################################         SAVE TRANSACTION STACK           ###################################### 
+  ######################################################################################################################
+
+  SaveTransactionQueue: 
+    Type: AWS::SQS::Queue
+    Properties: 
+      QueueName: SaveTransactionQueue
+      RedrivePolicy: 
+        deadLetterTargetArn: !GetAtt SaveTransactionDeadLetterQueue.Arn
+        maxReceiveCount: 3
+
+  SaveTransactionDeadLetterQueue: 
+    Type: AWS::SQS::Queue
+    Properties: 
+      QueueName: SaveTransactionDeadLetterQueue
+    
+  SaveTransactionTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: "SaveTransactionTopic"
+      Subscription:
+        - Endpoint: !GetAtt SaveTransactionQueue.Arn
+          Protocol: "sqs"
+
+  SaveTransactionLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+            - sts:AssumeRole
+    Policies:
+      - PolicyName: AllowSqs
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - sqs:ReceiveMessage
+                - sqs:DeleteMessage
+                - sqs:GetQueueAttributes
+                - sqs:ChangeMessageVisibility
+              Resource: !GetAtt SaveTransactionQueue.Arn
+
+  SaveTransactionLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: SaveTransactionLambda
+      Handler: index.lambda_handler
+      Runtime: python3.8
+      Timeout: 30
+      Role: !GetAtt SaveTransactionLambdaExecutionRole.Arn
+      Code:
+        ZipFile: |
+          def lambda_handler(event, context):
+            return true
+
+  SaveTransactionLambdaEventSourceMapping:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      BatchSize: 10
+      Enabled: true
+      EventSourceArn: !GetAtt SaveTransactionQueue.Arn
+      FunctionName: !GetAtt SaveTransactionLambda.Arn
+
+  ######################################################################################################################
+  ######################################      GET TRANSACTIONS BY USER STACK      ###################################### 
+  ######################################################################################################################
+
+  GetTransactionsByUserRestApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: lambda-api
+  
+  GetTransactionsByUserRestApiResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId: !GetAtt GetTransactionsByUserRestApi.RootResourceId
+      PathPart: 'transactions'
+      RestApiId: !Ref GetTransactionsByUserRestApi
+
+  GetTransactionsByUserRestApiMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      ApiKeyRequired: false
+      AuthorizationType: NONE
+      HttpMethod: GET
+      Integration:
+        Credentials: !GetAtt GetTransactionsByUserRestApiIamRole.Arn
+        IntegrationHttpMethod: GET
+        Type: AWS_PROXY
+        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetTransactionsByUserLambda.Arn}/invocations'
+      ResourceId: !Ref GetTransactionsByUserRestApiResource
+      RestApiId: !Ref GetTransactionsByUserRestApi
+
+  GetTransactionsByUserRestApiModel:
+    Type: AWS::ApiGateway::Model
+    Properties:
+      ContentType: 'application/json'
+      RestApiId: !Ref GetTransactionsByUserRestApi
+      Schema: {}
+
+  GetTransactionsByUserRestApiStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      DeploymentId: !Ref GetTransactionsByUserRestApiDeployment
+      RestApiId: !Ref GetTransactionsByUserRestApi
+      StageName: 'dev'
+
+  GetTransactionsByUserRestApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn: GetTransactionsByUserRestApiMethod
+    Properties:
+      RestApiId: !Ref GetTransactionsByUserRestApi
+
+  GetTransactionsByUserRestApiIamRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: ''
+            Effect: 'Allow'
+            Principal:
+              Service:
+                - 'apigateway.amazonaws.com'
+            Action:
+              - 'sts:AssumeRole'
+      Path: '/'
+      Policies:
+        - PolicyName: LambdaAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action: 'lambda:*'
+                Resource: !GetAtt GetTransactionsByUserLambda.Arn
+
+  GetTransactionsByUserLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: GetTransactionsByUserLambda
+      Handler: index.lambda_handler
+      Runtime: python3.8
+      Timeout: 30
+      Role: !GetAtt GetTransactionsByUserLambdaExecutionRole.Arn
+      Code:
+        ZipFile: |
+          def lambda_handler(event, context):
+            user = event['queryStringParameters']['user']
+            response = {
+              'isBase64Encoded': False,
+              'statusCode': 200,
+              'headers': {},
+              'multiValueHeaders': {},
+              'body': user + ' transactions!'
+            }
+            return response        
+
+  GetTransactionsByUserLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              Service:
+                - 'lambda.amazonaws.com'
+            Action:
+              - 'sts:AssumeRole'
