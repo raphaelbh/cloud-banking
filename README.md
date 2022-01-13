@@ -50,40 +50,40 @@ Transaction: {
 
 1. Run localstack
 
-`docker run --rm -it -p 4566:4566 -p 4571:4571 localstack/localstack`
+`$ docker run --rm -it -p 4566:4566 -p 4571:4571 localstack/localstack`
 
 2. Create stack
 
-`aws cloudformation validate-template --endpoint-url http://localhost:4566 --template-body file://cloudformation/bank.yml`
+`$ aws cloudformation validate-template --endpoint-url http://localhost:4566 --template-body file://cloudformation/bank.yml`
 
-`aws cloudformation create-stack --endpoint-url http://localhost:4566 --stack-name bank --template-body file://cloudformation/bank.yml`
+`$ aws cloudformation create-stack --endpoint-url http://localhost:4566 --stack-name bank --template-body file://cloudformation/bank.yml`
 
-`aws cloudformation list-stack-resources --endpoint-url http://localhost:4566 --stack-name bank`
+`$ aws cloudformation list-stack-resources --endpoint-url http://localhost:4566 --stack-name bank`
 
 3. Update lambda save transactions
 
-`(cd lambda-save-transaction && rm -f -r -- __pycache__ && rm -f -- lambda.zip && zip -r lambda.zip ./*)`
+`$ (cd lambda-save-transaction && rm -f -r -- __pycache__ && rm -f -- lambda.zip && zip -r lambda.zip ./*)`
 
-`aws lambda update-function-code --endpoint-url http://localhost:4566 --function-name SaveTransactionLambda --zip-file fileb://lambda-save-transaction/lambda.zip`
+`$ aws lambda update-function-code --endpoint-url http://localhost:4566 --function-name SaveTransactionLambda --zip-file fileb://lambda-save-transaction/lambda.zip`
 
 
 4. Update lambda get transactions by user
 
-`(cd lambda-get-transactions-by-user && rm -f -r -- __pycache__ && rm -f -- lambda.zip && zip -r lambda.zip ./*)`
+`$ (cd lambda-get-transactions-by-user && rm -f -r -- __pycache__ && rm -f -- lambda.zip && zip -r lambda.zip ./*)`
 
-`aws lambda update-function-code --endpoint-url http://localhost:4566 --function-name GetTransactionsByUserLambda --zip-file fileb://lambda-get-transactions-by-user/lambda.zip`
+`$ aws lambda update-function-code --endpoint-url http://localhost:4566 --function-name GetTransactionsByUserLambda --zip-file fileb://lambda-get-transactions-by-user/lambda.zip`
 
 
 ## Running and testing
 
 1. Save a transaction by publishing an event in the SaveTransactionTopic
 
-`# aws sns publish --endpoint-url http://localhost:4566 --topic-arn "arn:aws:sns:us-east-1:000000000000:SaveTransactionTopic" --message '{"user":"john","amount":"999.99","type":"TRANSFER_SENT"}'`
+`$ aws sns publish --endpoint-url http://localhost:4566 --topic-arn "arn:aws:sns:us-east-1:000000000000:SaveTransactionTopic" --message '{"user":"john","amount":"999.99","type":"TRANSFER_SENT"}'`
 
 2. Get rest api id
 
-`aws apigateway get-rest-apis --endpoint-url http://localhost:4566`
+`$ aws apigateway get-rest-apis --endpoint-url http://localhost:4566`
 
 3. Check saved transactions
 
-`curl http://${rest_api_id}.execute-api.localhost.localstack.cloud:4566/dev/transactions`
+`$ curl http://${rest_api_id}.execute-api.localhost.localstack.cloud:4566/dev/transactions`
