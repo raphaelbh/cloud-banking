@@ -1,6 +1,6 @@
 # Cloud Banking
 
-[![Project Status](https://img.shields.io/static/v1?label=project%20status&message=in%20development&color=yellow&style=flat-square)](#)
+[![Project Status](https://img.shields.io/static/v1?label=project%20status&message=complete&color=success&style=flat-square)](#)
 
 Proof of concept to present some services provided by AWS.
 
